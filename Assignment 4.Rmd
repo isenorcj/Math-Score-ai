@@ -1,0 +1,151 @@
+---
+title: "Assignment 4"
+author: "Clifford Isenor"
+date: "25/02/2020"
+output: pdf_document
+---
+---
+title: "Assignment 4"
+author: "Clifford Isenor"
+date: "17/02/2020"
+output: pdf_document
+---
+
+### Packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dslabs)
+```
+
+## get data
+```{r}
+filepath <-"https://quantdev.ssri.psu.edu/sites/qdev/files/student-mat.csv"
+df <-read.table(file=url(filepath),sep=";",header=TRUE)
+
+```
+
+# Q1
+### create a matrix including only factor variables from the data. Call this ma-trix XF. Do not do it manually. 
+### You must use a loop or lapply/sapply functions.See earlier lectures. (10 Points)
+```{r}
+
+xf <-as.matrix(df[,sapply(df, is.factor)])
+
+```
+
+# Q2
+### Create a matrix including only integer variables from the data.  Call this matrix XC. Change every integer variable in XC to 
+### numeric variable and scale them (see scale()). Do not do it manually. You must use a loop or lapply/sapplyfunctions (15 Points).
+
+```{r}
+xc <- as.matrix(df[,sapply(df, is.integer)])
+xc <- scale(xc)
+
+```
+
+# Q3
+### Model.matrix() with XF to create numeric (0 and 1) columns.  (5Points).
+```{r}
+xff <- model.matrix(~.-1, data.frame(xf))
+
+```
+
+# Q4
+```{r}
+y <- factor(xc[,16],levels = c(0,1), labels = c("i < Mean", "i < Mean") )#establish container of factor var
+y<-ifelse((xc[, 16] < mean(xc[,16])),1,0) #assign the 1 if G# test score < mean esle 0
+xc<-xc[,-(14:16)] # drop G1,G2,G3
+```
+
+# Q5
+```{r}
+df <- data.frame(y,xff,xc)
+
+```
+
+# Q6
+### 1) Split data
+```{r}
+
+sh <- sample(nrow(df), nrow(df), replace = FALSE) #shuffle data
+ind_test <- sh[1:(nrow(df) / 10)] #index postioins of 10% of df data
+ind_train <- sh[-ind_test] #index postioins of 90% of df data
+
+test<-df[ind_test,] #10% of df
+train<- df[ind_train,] #90% of df
+
+k<-10
+```
+
+
+### 2) hyperperameters
+```{r}
+knn <- seq(from = 1, to = 30, by = 1 ) #the numbers of grouping s to be tested
+th <- seq(from = 0.045, 0.7, by = 0.025) #the thresholds to use
+
+```
+
+### 3) Containtiners
+```{r}
+hit <- matrix(0, length(th), length(knn)) #hit ratio container
+opt <- matrix(0,k,3) #optimal vaules container
+best <- c()
+```
+
+### 4) use KLM Model to predict y
+```{r}
+library(caret)
+
+ntest <- floor(nrow(train) / k)
+
+
+for (i in 1:k) {#loop for [k]number of folds
+  
+  ind_test <- c(((i - 1) * ntest + 1):(i * ntest)) #get index for test slice(i)
+  ind_train <- c(1:nrow(train))[-ind_test] #get index for train slice(i)
+
+  df_test <- train[ind_test,] #get actual vaules for test slice[i]
+  df_train <- train[ind_train,] #get actual vaules for train slice[i]
+  
+  
+  for (s in 1:length(knn)) { #number of groupings = knn
+    
+    #run model
+    model <-
+      knn3(y ~ .,
+           data = df_train,
+           k = knn[s])
+    #predict
+    phat <-
+      predict(model, df_test, type = "prob") #breaks here on i=10 for some
+    
+    for (j in 1:length(th)) {
+      #try all threshold vaules
+      
+      yhat <-
+        phat[, 2] > th[j] #test predicited vaules against a seris of thresholds; True if greater then then thres else False
+      
+      ct <-
+        table(df_test$y, yhat) #create a confusion table with results
+      
+      hit[j, s] <-
+        sum(diag(ct) / sum(ct)) #calculate hit ratio from confusion table
+      
+      cat("k-fold loop: ", i, ".", s, '.', j,  "\r") #cycle counter
+    }
+  }
+  #theres got to be a better way
+  coor <-
+    as.vector((which(hit == max(hit), arr.ind = TRUE))[1, ]) # coordantes of first highest hit ration
+  
+  opt[i, ] <-
+    c(coor[1], coor[2], hit[coor[1], coor[2]]) #assign coorordante 1,#assign coorordante 2, and respective hit rate
+  
+}
+best <- max(opt[, 3]) # find highest over all hit rate
+opt #print results
+cat('\n best over all: ', best) #print best
+
+```
+
