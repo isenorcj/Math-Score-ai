@@ -4,12 +4,7 @@ author: "Clifford Isenor"
 date: "25/02/2020"
 output: pdf_document
 ---
----
-title: "Assignment 4"
-author: "Clifford Isenor"
-date: "17/02/2020"
-output: pdf_document
----
+
 
 ### Packages
 ```{r setup, include=FALSE}
@@ -35,8 +30,7 @@ xf <-as.matrix(df[,sapply(df, is.factor)])
 ```
 
 # Q2
-### Create a matrix including only integer variables from the data.  Call this matrix XC. Change every integer variable in XC to 
-### numeric variable and scale them (see scale()). Do not do it manually. You must use a loop or lapply/sapplyfunctions (15 Points).
+### Create a matrix including only integer variables from the data.  Call this matrix XC. Change every integer variable in XC to numeric variable and scale them (see scale()). Do not do it manually. You must use a loop or lapply/sapplyfunctions (15 Points).
 
 ```{r}
 xc <- as.matrix(df[,sapply(df, is.integer)])
